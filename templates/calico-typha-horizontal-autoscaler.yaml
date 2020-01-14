@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: calico-typha-horizontal-autoscaler
+    namespace: kube-system
+    labels:
+        k8s-app: calico-typha-autoscaler
+spec:
+    selector:
+        matchLabels:
+            k8s-app: calico-typha-autoscaler
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                k8s-app: calico-typha-autoscaler
+                app: calico
+                team: infrastructure
+                department: devops
+                owner: omega
+                env: kube-system
+        spec:
+            priorityClassName: system-cluster-critical
+            nodeSelector:
+                beta.kubernetes.io/os: linux
+            containers:
+                - image: k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.2
+                  name: autoscaler
+                  command:
+                      - /cluster-proportional-autoscaler
+                      - --namespace=kube-system
+                      - --configmap=calico-typha-horizontal-autoscaler
+                      - --target=deployment/calico-typha
+                      - --logtostderr=true
+                      - --v=2
+                  resources:
+                      requests:
+                          memory: "10M"
+                          cpu: "10m"
+                      limits:
+                          memory: "64M"
+                          cpu: "200m"
+            serviceAccountName: typha-cpha
